@@ -5,5 +5,5 @@
 void app_main()
 {
 	sensor_init();
-	timer_init(&readSensor, (uint64_t)500000);
+	timer_init(&readSensor, (uint64_t)300);
 }
