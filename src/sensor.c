@@ -10,6 +10,12 @@ void sensor_init()
 
 void readSensor(void *arg)
 {
-
+  int rawReadValue = 0;
+  int scaledReadValue = 0;
+  rawReadValue = adc1_get_raw(ADC1_CHANNEL_6);
+  scaledReadValue = (uint8_t)((rawReadValue * 127) / 4095);
+  if(scaledReadValue>20){
+    printf("scaledReadValue: %d\n",scaledReadValue); 
+  }
   return;
 }
