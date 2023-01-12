@@ -10,14 +10,22 @@ void sensor_init()
 
 void readSensor(void *arg)
 {
+  QueueHandle_t *xQueue_ptr = (QueueHandle_t *)(arg);
+
   static int velocity_max = 0;
   int rawReadValue = 0;
   int scaledReadValue = 0;
   rawReadValue = adc1_get_raw(ADC1_CHANNEL_6);
   scaledReadValue = (uint8_t)((rawReadValue * 127) / 4095);
+  BaseType_t xStatus;
+
   if (singlePiezoSensing(scaledReadValue, 127, 20, 21 * 300, 82 * 300, &velocity_max))
   {
-    printf("velocity_max: %d.\n", velocity_max);
+    xStatus = xQueueSendToBack(*xQueue_ptr, &velocity_max, 0);
+    if (xStatus != pdPASS)
+    {
+      printf("Could not send to the queue.\r\n");
+    }
   }
   return;
 }

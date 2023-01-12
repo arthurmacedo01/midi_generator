@@ -1,4 +1,5 @@
 #include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 #include "driver/adc.h"
 #include "esp_adc_cal.h"
 
