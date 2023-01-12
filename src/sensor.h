@@ -4,3 +4,5 @@
 
 void sensor_init();
 void readSensor(void *arg);
+bool singlePiezoSensing(int piezoValue, int Sensitivity, int Threshold, int scanTime, int maskTime, int *velocity);
+int curve(int velocity, int Threshold, int Sensitivity);
