@@ -5,6 +5,7 @@
     "piezoreader.h": "c",
     "timer.h": "c",
     "stdio.h": "c",
-    "sensor.h": "c"
+    "sensor.h": "c",
+    "queue.h": "c"
   }
 }
