@@ -1,3 +1,9 @@
+/* 
+One can receive the midi commands on computer by the ttymidi program.
+Run on terminal:
+ttymidi -s /dev/ttyUSB0 -v
+*/
+
 #include "midi.h"
 
 #define BUF_SIZE (1024)
@@ -41,4 +47,18 @@ void send_MIDI(uint8_t messageType, uint8_t channel, uint8_t dataByte1, uint8_t 
   buffer[2] = dataByte2;
 
   uart_write_bytes(UART_NUM_0, (const char *)buffer, sizeof(buffer));
+}
+
+void send_MIDI_callback(void *arg)
+{
+  QueueHandle_t *xQueue_ptr = (QueueHandle_t *)(arg);
+
+  int velocity;
+  while (true)
+  {
+    if (xQueueReceive(*xQueue_ptr, &velocity, portMAX_DELAY))
+    {
+      send_MIDI(NOTE_ON, MIDI_CHANNEL, note_HighTom, velocity);
+    }
+  }
 }
