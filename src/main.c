@@ -12,5 +12,4 @@ void app_main()
 	midi_setup();
 	xQueue = xQueueCreate(10, sizeof(int));
 	timer_init(&readSensor, (void *)&xQueue, (uint64_t)300);
-	xTaskCreate(task1, "task", 1024 * 2, NULL, 5, &xTaskExample);
 }

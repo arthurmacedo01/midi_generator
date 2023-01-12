@@ -21,7 +21,6 @@ void readSensor(void *arg)
 
   if (singlePiezoSensing(scaledReadValue, 127, 20, 21 * 300, 82 * 300, &velocity_max))
   {
-    printf("velocity_max: %d.\n", velocity_max);
     xStatus = xQueueSendToBack(*xQueue_ptr, &velocity_max, 0);
     if (xStatus != pdPASS)
     {
