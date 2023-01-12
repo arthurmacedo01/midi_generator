@@ -4,6 +4,7 @@
     "esp_adc_cal.h": "c",
     "piezoreader.h": "c",
     "timer.h": "c",
-    "stdio.h": "c"
+    "stdio.h": "c",
+    "sensor.h": "c"
   }
 }
