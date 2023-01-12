@@ -8,9 +8,8 @@ ttymidi -s /dev/ttyUSB0 -v
 
 #define BUF_SIZE (1024)
 #define MIDI_CHANNEL (1)
-
-const uint8_t NOTE_ON = 0x90;
-const uint8_t note_HighTom = 50;
+#define NOTE_ON (0x90)
+#define NOTE_HIGHTOM (50)
 
 void midi_setup()
 {
@@ -58,7 +57,7 @@ void send_MIDI_callback(void *arg)
   {
     if (xQueueReceive(*xQueue_ptr, &velocity, portMAX_DELAY))
     {
-      send_MIDI(NOTE_ON, MIDI_CHANNEL, note_HighTom, velocity);
+      send_MIDI(NOTE_ON, MIDI_CHANNEL, NOTE_HIGHTOM, velocity);
     }
   }
 }
