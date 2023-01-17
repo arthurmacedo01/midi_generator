@@ -7,9 +7,6 @@ ttymidi -s /dev/ttyUSB0 -v
 #include "midi.h"
 
 #define BUF_SIZE (1024)
-#define MIDI_CHANNEL (1)
-#define NOTE_ON (0x90)
-#define NOTE_HIGHTOM (50)
 
 void midi_setup()
 {

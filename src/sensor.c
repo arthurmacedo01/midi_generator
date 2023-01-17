@@ -4,6 +4,7 @@
 #define CHANNEL_B (ADC1_CHANNEL_6)
 #define NOTE_A (50)
 #define NOTE_B (51)
+
 #define SENSITIVITY (127)
 #define THRESHOLD (20)
 #define SCANTIME (21 * 300)
