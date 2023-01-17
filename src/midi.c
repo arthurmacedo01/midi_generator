@@ -52,12 +52,12 @@ void send_MIDI_callback(void *arg)
 {
   QueueHandle_t *xQueue_ptr = (QueueHandle_t *)(arg);
 
-  int velocity;
+  midi_params_t midi_params;
   while (true)
   {
-    if (xQueueReceive(*xQueue_ptr, &velocity, portMAX_DELAY))
+    if (xQueueReceive(*xQueue_ptr, &midi_params, portMAX_DELAY))
     {
-      send_MIDI(NOTE_ON, MIDI_CHANNEL, NOTE_HIGHTOM, velocity);
+      send_MIDI(midi_params.messageType, midi_params.channel, midi_params.note, midi_params.velocity);
     }
   }
 }

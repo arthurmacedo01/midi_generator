@@ -6,6 +6,7 @@
     "timer.h": "c",
     "stdio.h": "c",
     "sensor.h": "c",
-    "queue.h": "c"
+    "queue.h": "c",
+    "uart.h": "c"
   }
 }

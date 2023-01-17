@@ -2,6 +2,7 @@
 #include "freertos/queue.h"
 #include "driver/adc.h"
 #include "esp_adc_cal.h"
+#include "midi.h"
 
 typedef struct sensor_t
 {
@@ -11,10 +12,11 @@ typedef struct sensor_t
   int threshold;
   int scanTime;
   int maskTime;
+  uint8_t velocity;
 } sensor_t;
 
 void sensor_init();
 void readAllSensors(void *arg);
-void readSensor(void *arg, sensor_t sensor);
-bool singlePiezoSensing(int piezoValue, int sensitivity, int threshold, int scanTime, int maskTime, int *velocity);
-int curve(int velocity, int threshold, int sensitivity);
+void readSensor(QueueHandle_t *xQueue_ptr, sensor_t *sensor);
+bool singlePiezoSensing(uint8_t piezoValue, uint8_t sensitivity, uint8_t threshold, int scanTime, int maskTime, uint8_t *velocity);
+int curve(uint8_t velocity, uint8_t threshold, uint8_t sensitivity);
