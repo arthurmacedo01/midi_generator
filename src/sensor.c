@@ -1,27 +1,68 @@
 #include "sensor.h"
 
+#define CHANNEL_A (ADC1_CHANNEL_5)
+#define CHANNEL_B (ADC1_CHANNEL_6)
+#define NOTE_A (50)
+#define NOTE_B (51)
+
+#define SENSITIVITY (127)
+#define THRESHOLD (20)
+#define SCANTIME (21 * 300)
+#define MASKTIME (82 * 300)
+
+#define MIDI_CHANNEL (1)
+#define NOTE_ON (0x90)
+
 void sensor_init()
 {
   esp_adc_cal_characteristics_t adc1_chars;
   esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_6, ADC_WIDTH_BIT_DEFAULT, 0, &adc1_chars);
   adc1_config_width(ADC_WIDTH_BIT_DEFAULT);
-  adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_DB_6);
+  adc1_config_channel_atten(CHANNEL_A, ADC_ATTEN_DB_6);
+  adc1_config_channel_atten(CHANNEL_B, ADC_ATTEN_DB_6);
 }
 
-void readSensor(void *arg)
+void readAllSensors(void *arg)
 {
   QueueHandle_t *xQueue_ptr = (QueueHandle_t *)(arg);
 
-  static int velocity_max = 0;
+  static sensor_t sensor_a = {
+      .adc1_channel = CHANNEL_A,
+      .note = NOTE_A,
+      .sensitivity = SENSITIVITY,
+      .threshold = THRESHOLD,
+      .scanTime = SCANTIME,
+      .maskTime = MASKTIME,
+      .velocity = 0};
+
+  static sensor_t sensor_b = {
+      .adc1_channel = CHANNEL_B,
+      .note = NOTE_B,
+      .sensitivity = SENSITIVITY,
+      .threshold = THRESHOLD,
+      .scanTime = SCANTIME,
+      .maskTime = MASKTIME,
+      .velocity = 0};
+
+  readSensor(xQueue_ptr, &sensor_a);
+  readSensor(xQueue_ptr, &sensor_b);
+}
+
+void readSensor(QueueHandle_t *xQueue_ptr, sensor_t *sensor)
+{
   int rawReadValue = 0;
-  int scaledReadValue = 0;
-  rawReadValue = adc1_get_raw(ADC1_CHANNEL_6);
+  uint8_t scaledReadValue = 0;
+  rawReadValue = adc1_get_raw(sensor->adc1_channel);
   scaledReadValue = (uint8_t)((rawReadValue * 127) / 4095);
   BaseType_t xStatus;
 
-  if (singlePiezoSensing(scaledReadValue, 127, 20, 21 * 300, 82 * 300, &velocity_max))
+  if (singlePiezoSensing(scaledReadValue, sensor->sensitivity, sensor->threshold, sensor->scanTime, sensor->maskTime, &(sensor->velocity)))
   {
-    xStatus = xQueueSendToBack(*xQueue_ptr, &velocity_max, 0);
+    midi_params_t midi_params = {.messageType = NOTE_ON,
+                                 .channel = MIDI_CHANNEL,
+                                 .note = sensor->note,
+                                 .velocity = sensor->velocity};
+    xStatus = xQueueSendToBack(*xQueue_ptr, &midi_params, 0);
     if (xStatus != pdPASS)
     {
       printf("Could not send to the queue.\r\n");
@@ -30,7 +71,7 @@ void readSensor(void *arg)
   return;
 }
 
-bool singlePiezoSensing(int piezoValue, int Sensitivity, int Threshold, int scanTime, int maskTime, int *velocity)
+bool singlePiezoSensing(uint8_t piezoValue, uint8_t sensitivity, uint8_t threshold, int scanTime, int maskTime, uint8_t *velocity)
 {
   static uint64_t time_hit = 0; // time in us
   static uint64_t time_end = 0; // time in us
@@ -39,7 +80,7 @@ bool singlePiezoSensing(int piezoValue, int Sensitivity, int Threshold, int scan
   bool hit = false;
 
   // when the value > threshold
-  if (piezoValue > Threshold && loopTimes == 0)
+  if (piezoValue > threshold && loopTimes == 0)
   {
     // Start the scan time
     time_hit = esp_timer_get_time(); // check the time pad hitted
@@ -67,7 +108,7 @@ bool singlePiezoSensing(int piezoValue, int Sensitivity, int Threshold, int scan
 
     if (esp_timer_get_time() - time_hit >= scanTime)
     {
-      *velocity = curve(*velocity, Threshold, Sensitivity); // apply the curve at the velocity
+      *velocity = curve(*velocity, threshold, sensitivity); // apply the curve at the velocity
       time_end = esp_timer_get_time();
       loopTimes = 0; // reset loopTimes (ready for next sensing)
       hit = true;    // mark as hit
@@ -77,9 +118,9 @@ bool singlePiezoSensing(int piezoValue, int Sensitivity, int Threshold, int scan
   return hit;
 }
 
-int curve(int velocity, int Threshold, int Sensitivity)
+int curve(uint8_t velocity, uint8_t threshold, uint8_t sensitivity)
 {
-  int res = (127 * (velocity - Threshold)) / (Sensitivity - Threshold);
+  int res = (127 * (velocity - threshold)) / (sensitivity - threshold);
 
   if (res <= 1) // initial velocity cannot be lower than thre1Raw so probably velocity here cannot be lower than 1
   {

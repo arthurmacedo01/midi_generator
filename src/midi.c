@@ -7,9 +7,6 @@ ttymidi -s /dev/ttyUSB0 -v
 #include "midi.h"
 
 #define BUF_SIZE (1024)
-#define MIDI_CHANNEL (1)
-#define NOTE_ON (0x90)
-#define NOTE_HIGHTOM (50)
 
 void midi_setup()
 {
@@ -52,12 +49,12 @@ void send_MIDI_callback(void *arg)
 {
   QueueHandle_t *xQueue_ptr = (QueueHandle_t *)(arg);
 
-  int velocity;
+  midi_params_t midi_params;
   while (true)
   {
-    if (xQueueReceive(*xQueue_ptr, &velocity, portMAX_DELAY))
+    if (xQueueReceive(*xQueue_ptr, &midi_params, portMAX_DELAY))
     {
-      send_MIDI(NOTE_ON, MIDI_CHANNEL, NOTE_HIGHTOM, velocity);
+      send_MIDI(midi_params.messageType, midi_params.channel, midi_params.note, midi_params.velocity);
     }
   }
 }
