@@ -2,11 +2,14 @@
 
 #define CHANNEL_A (ADC1_CHANNEL_5)
 #define CHANNEL_B (ADC1_CHANNEL_6)
-#define NOTE_A (50)
-#define NOTE_B (51)
+#define NOTE_A1 (64)
+#define NOTE_A2 (64)
+#define NOTE_B1 (63)
+#define NOTE_B2 (62)
 
 #define SENSITIVITY (127)
 #define THRESHOLD (20)
+#define CHANGINNOTETHRESHOLD (126)
 #define SCANTIME (21 * 300)
 #define MASKTIME (82 * 300)
 
@@ -28,18 +31,24 @@ void readAllSensors(void *arg)
 
   static sensor_t sensor_a = {
       .adc1_channel = CHANNEL_A,
-      .note = NOTE_A,
+      .note1 = NOTE_A1,
+      .note2 = NOTE_A2,
+      .note = (uint8_t)0,
       .sensitivity = SENSITIVITY,
       .threshold = THRESHOLD,
+      .changingNoteThreshold = CHANGINNOTETHRESHOLD,
       .scanTime = SCANTIME,
       .maskTime = MASKTIME,
       .velocity = 0};
 
   static sensor_t sensor_b = {
       .adc1_channel = CHANNEL_B,
-      .note = NOTE_B,
+      .note1 = NOTE_B1,
+      .note2 = NOTE_B2,
+      .note = (uint8_t)0,
       .sensitivity = SENSITIVITY,
       .threshold = THRESHOLD,
+      .changingNoteThreshold = CHANGINNOTETHRESHOLD,
       .scanTime = SCANTIME,
       .maskTime = MASKTIME,
       .velocity = 0};
@@ -58,6 +67,7 @@ void readSensor(QueueHandle_t *xQueue_ptr, sensor_t *sensor)
 
   if (singlePiezoSensing(scaledReadValue, sensor->sensitivity, sensor->threshold, sensor->scanTime, sensor->maskTime, &(sensor->velocity)))
   {
+    calculateNote(sensor);
     midi_params_t midi_params = {.messageType = NOTE_ON,
                                  .channel = MIDI_CHANNEL,
                                  .note = sensor->note,
@@ -131,4 +141,17 @@ int curve(uint8_t velocity, uint8_t threshold, uint8_t sensitivity)
     res = 127;
   }
   return res;
+}
+
+void calculateNote(sensor_t *sensor)
+{
+  if (sensor->velocity <= sensor->changingNoteThreshold) // initial velocity cannot be lower than thre1Raw so probably velocity here cannot be lower than 1
+  {
+    sensor->note = sensor->note1;
+  }
+  else
+  {
+    sensor->note = sensor->note2;
+  }
+  return;
 }
