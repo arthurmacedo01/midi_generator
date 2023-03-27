@@ -16,12 +16,15 @@ typedef struct sensor_t
   int scanTime;
   int maskTime;
   uint8_t velocity;
+  uint64_t time_hit; // time in us
+  uint64_t time_end; // time in us
+  int loopTimes;
 } sensor_t;
 
 void sensor_init();
 void readAllSensors(void *arg);
 void readSensor(QueueHandle_t *xQueue_ptr, sensor_t *sensor);
-bool singlePiezoSensing(uint8_t piezoValue, uint8_t sensitivity, uint8_t threshold, int scanTime, int maskTime, uint8_t *velocity);
+bool singlePiezoSensing(uint8_t piezoValue, uint8_t sensitivity, uint8_t threshold, int scanTime, int maskTime, uint8_t *velocity, uint64_t *time_hit, uint64_t *time_end, int *loopTimes);
 int curve(uint8_t velocity, uint8_t threshold, uint8_t sensitivity);
 void calculateNote(sensor_t *sensor);
 

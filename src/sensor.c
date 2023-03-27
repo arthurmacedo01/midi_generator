@@ -39,7 +39,10 @@ void readAllSensors(void *arg)
       .changingNoteThreshold = CHANGINNOTETHRESHOLD,
       .scanTime = SCANTIME,
       .maskTime = MASKTIME,
-      .velocity = 0};
+      .velocity = 0,
+      .time_hit = 0,
+      .time_end = 0,
+      .loopTimes = 0};
 
   static sensor_t sensor_b = {
       .adc1_channel = CHANNEL_B,
@@ -51,7 +54,10 @@ void readAllSensors(void *arg)
       .changingNoteThreshold = CHANGINNOTETHRESHOLD,
       .scanTime = SCANTIME,
       .maskTime = MASKTIME,
-      .velocity = 0};
+      .velocity = 0,
+      .time_hit = 0,
+      .time_end = 0,
+      .loopTimes = 0};
 
   readSensor(xQueue_ptr, &sensor_a);
   readSensor(xQueue_ptr, &sensor_b);
@@ -65,14 +71,14 @@ void readSensor(QueueHandle_t *xQueue_ptr, sensor_t *sensor)
   scaledReadValue = (uint8_t)((rawReadValue * 127) / 4095);
   BaseType_t xStatus;
 
-  if (singlePiezoSensing(scaledReadValue, sensor->sensitivity, sensor->threshold, sensor->scanTime, sensor->maskTime, &(sensor->velocity)))
+  if (singlePiezoSensing(scaledReadValue, sensor->sensitivity, sensor->threshold, sensor->scanTime, sensor->maskTime, &(sensor->velocity), &(sensor->time_hit), &(sensor->time_end), &(sensor->loopTimes)))
   {
     calculateNote(sensor);
     midi_params_t midi_params = {.messageType = NOTE_ON,
                                  .channel = MIDI_CHANNEL,
                                  .note = sensor->note,
                                  .velocity = sensor->velocity};
-    xStatus = xQueueSendToBack(*xQueue_ptr, &midi_params, 0);
+    xStatus = xQueueSendToBack(*xQueue_ptr, &midi_params, portMAX_DELAY);
     if (xStatus != pdPASS)
     {
       printf("Could not send to the queue.\r\n");
@@ -81,47 +87,44 @@ void readSensor(QueueHandle_t *xQueue_ptr, sensor_t *sensor)
   return;
 }
 
-bool singlePiezoSensing(uint8_t piezoValue, uint8_t sensitivity, uint8_t threshold, int scanTime, int maskTime, uint8_t *velocity)
+bool singlePiezoSensing(uint8_t piezoValue, uint8_t sensitivity, uint8_t threshold, int scanTime, int maskTime, uint8_t *velocity, uint64_t *time_hit, uint64_t *time_end, int *loopTimes)
 {
-  static uint64_t time_hit = 0; // time in us
-  static uint64_t time_end = 0; // time in us
-  static int loopTimes = 0;
 
   bool hit = false;
 
   // when the value > threshold
-  if (piezoValue > threshold && loopTimes == 0)
+  if (piezoValue > threshold && *loopTimes == 0)
   {
     // Start the scan time
-    time_hit = esp_timer_get_time(); // check the time pad hitted
+    *time_hit = esp_timer_get_time(); // check the time pad hitted
 
     // compare time to cancel retrigger
-    if (time_hit - time_end < maskTime)
+    if (*time_hit - *time_end < maskTime)
     {
       return false; // Ignore the scan
     }
     else
     {
       *velocity = piezoValue; // first peak
-      loopTimes = 1;          // start scan trigger
+      *loopTimes = 1;         // start scan trigger
     }
   }
 
   // peak scan start
-  if (loopTimes > 0)
+  if (*loopTimes > 0)
   {
     if (piezoValue > *velocity)
     {
       *velocity = piezoValue;
     }
-    loopTimes++;
+    (*loopTimes) = *loopTimes + 1;
 
-    if (esp_timer_get_time() - time_hit >= scanTime)
+    if (esp_timer_get_time() - *time_hit >= scanTime)
     {
       *velocity = curve(*velocity, threshold, sensitivity); // apply the curve at the velocity
-      time_end = esp_timer_get_time();
-      loopTimes = 0; // reset loopTimes (ready for next sensing)
-      hit = true;    // mark as hit
+      *time_end = esp_timer_get_time();
+      *loopTimes = 0; // reset loopTimes (ready for next sensing)
+      hit = true;     // mark as hit
     }
   }
 
